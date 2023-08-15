@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import MoviesList from "./components/MoviesList";
 import "./App.css";
@@ -6,32 +6,70 @@ import "./App.css";
 function App() {
   const [movie, setMovie] = useState([]);
   const [isLoader, setIsLoader] = useState(false);
-  async function fetchMoviesLists() {
+  const [error, setError] = useState(null);
+  const intervalRef = useRef(null);
+
+  const FetchMoviesLists = useCallback(async () => {
     setIsLoader(true);
-    const moviesURL = await fetch("https://swapi.py4e.com/api/films");
-    const data = await moviesURL.json();
-    const transformedData = data.results.map((movieData) => {
-      return {
-        id: movieData.episode_id,
-        title: movieData.title,
-        openingText: movieData.opening_crawl,
-        releaseDate: movieData.release_date,
-      };
-    });
-    setMovie(transformedData);
+    setError(null);
+
+    try {
+      const moviesURL = await fetch("https://swapi.py4e.com/api/film");
+      console.log("refetch");
+      if (!moviesURL.ok) {
+        throw new Error("Something went wrong ....Retrying");
+      }
+      const data = await moviesURL.json();
+      const transformedData = data.results.map((movieData) => {
+        return {
+          id: movieData.episode_id,
+          title: movieData.title,
+          openingText: movieData.opening_crawl,
+          releaseDate: movieData.release_date,
+        };
+      });
+      setMovie(transformedData);
+    } catch (error) {
+      setError(error.message);
+    }
+
     setIsLoader(false);
+  }, []);
+
+  const setIntervalHandler = useCallback(async () => {
+    intervalRef.current = setInterval(FetchMoviesLists, 5000);
+  }, [FetchMoviesLists]);
+
+  const removeIntervalHandler = useCallback(async () => {
+    clearInterval(intervalRef.current);
+    setError(null)
+  }, [intervalRef]);
+
+  useEffect(() => {
+    return () => {
+      clearInterval(intervalRef.current);
+    };
+  }, []);
+
+  let content = <p>Found no Movies</p>;
+
+  if (isLoader) {
+    content = <p>Loading...</p>;
+  }
+  if (movie.length > 0) {
+    content = <MoviesList movies={movie} />;
+  }
+  if (error) {
+    content = <p>{error}</p>;
   }
 
   return (
     <React.Fragment>
       <section>
-        <button onClick={fetchMoviesLists}>Fetch Movies</button>
+        <button onClick={setIntervalHandler}>Fetch Movies</button>
+        <button onClick={removeIntervalHandler}>Cancel</button>
       </section>
-      <section>
-        {!isLoader && movie.length > 0 && <MoviesList movies={movie} />}
-        {!isLoader && movie.length === 0 && <p>No Movie Found...</p>}
-        {isLoader && <p>Loading...</p>}
-      </section>
+      <section>{content}</section>
     </React.Fragment>
   );
 }
