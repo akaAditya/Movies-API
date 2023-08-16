@@ -14,7 +14,7 @@ function App() {
     setError(null);
 
     try {
-      const moviesURL = await fetch("https://swapi.py4e.com/api/film");
+      const moviesURL = await fetch("https://swapi.py4e.com/api/films");
       console.log("refetch");
       if (!moviesURL.ok) {
         throw new Error("Something went wrong ....Retrying");
@@ -36,6 +36,7 @@ function App() {
     setIsLoader(false);
   }, []);
 
+  // Time Interval
   const setIntervalHandler = useCallback(async () => {
     intervalRef.current = setInterval(FetchMoviesLists, 5000);
   }, [FetchMoviesLists]);
@@ -50,6 +51,11 @@ function App() {
       clearInterval(intervalRef.current);
     };
   }, []);
+
+// Fetch movies on loading the page using useEffect
+  useEffect(()=>{
+    FetchMoviesLists()
+  },[FetchMoviesLists])
 
   let content = <p>Found no Movies</p>;
 
