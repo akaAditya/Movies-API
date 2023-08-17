@@ -1,61 +1,97 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 import MoviesList from "./components/MoviesList";
 import "./App.css";
-import MovieForm from "./components/MovieForm";
+import AddMovie from "./components/AddMovie";
 
 function App() {
   const [movie, setMovie] = useState([]);
   const [isLoader, setIsLoader] = useState(false);
   const [error, setError] = useState(null);
-  const intervalRef = useRef(null);
 
   const FetchMoviesLists = useCallback(async () => {
     setIsLoader(true);
     setError(null);
 
     try {
-      const moviesURL = await fetch("https://swapi.py4e.com/api/films");
-      console.log("refetch");
+      const moviesURL = await fetch(
+        "https://react-movies-a9014-default-rtdb.firebaseio.com/movies.json"
+      );
       if (!moviesURL.ok) {
         throw new Error("Something went wrong ....Retrying");
       }
       const data = await moviesURL.json();
-      const transformedData = data.results.map((movieData) => {
-        return {
-          id: movieData.episode_id,
-          title: movieData.title,
-          openingText: movieData.opening_crawl,
-          releaseDate: movieData.release_date,
-        };
-      });
-      setMovie(transformedData);
+      // console.log('new movies',data)
+      const loadedMovies = [];
+      for (let key in data) {
+        loadedMovies.push({
+          id: key,
+          title: data[key].title,
+          openingText: data[key].openingText,
+          releaseDate: data[key].releaseDate,
+        });
+      }
+
+      // const transformedData = data.results.map((movieData) => {
+      //   return {
+      //     id: movieData.episode_id,
+      //     title: movieData.title,
+      //     openingText: movieData.opening_crawl,
+      //     releaseDate: movieData.release_date,
+      //   };
+      // });
+      setMovie(loadedMovies);
     } catch (error) {
       setError(error.message);
     }
 
     setIsLoader(false);
   }, []);
+  // const setIntervalHandler = useCallback(async () => {
+  //   intervalRef.current = setInterval(FetchMoviesLists, 5000);
+  // }, [FetchMoviesLists]);
 
-  const setIntervalHandler = useCallback(async () => {
-    intervalRef.current = setInterval(FetchMoviesLists, 5000);
-  }, [FetchMoviesLists]);
+  // const removeIntervalHandler = useCallback(async () => {
+  //   clearInterval(intervalRef.current);
+  //   setError(null);
+  // }, [intervalRef]);
 
-  const removeIntervalHandler = useCallback(async () => {
-    clearInterval(intervalRef.current);
-    setError(null);
-  }, [intervalRef]);
-
-  useEffect(() => {
-    return () => {
-      clearInterval(intervalRef.current);
-    };
-  }, []);
+  // useEffect(() => {
+  //   return () => {
+  //     clearInterval(intervalRef.current);
+  //   };
+  // }, []);
 
   // Fetch movies on loading the page using useEffect
   useEffect(() => {
     FetchMoviesLists();
   }, [FetchMoviesLists]);
+
+  const addMovieHandler = async (movie) => {
+    const response = await fetch(
+      "https://react-movies-a9014-default-rtdb.firebaseio.com/movies.json",
+      {
+        method: "POST",
+        body: JSON.stringify(movie),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    const data = await response.json();
+    console.log(data);
+  };
+
+  const deleteMovieHandler = async (id) => {
+    const response = await fetch(
+      `https://react-movies-a9014-default-rtdb.firebaseio.com/movies/${id}.json`,
+      {
+        method: "DELETE",
+      }
+    );
+    const data = await response.json(id);
+    console.log("coming from delete handler ", data);
+  };
 
   let content = <p>Found no Movies</p>;
 
@@ -63,7 +99,7 @@ function App() {
     content = <p>Loading...</p>;
   }
   if (movie.length > 0) {
-    content = <MoviesList movies={movie} />;
+    content = <MoviesList movies={movie} onDeleteMovie={deleteMovieHandler} />;
   }
   if (error) {
     content = <p>{error}</p>;
@@ -71,10 +107,11 @@ function App() {
 
   return (
     <React.Fragment>
-      <MovieForm />
       <section>
-        <button onClick={setIntervalHandler}>Fetch Movies</button>
-        <button onClick={removeIntervalHandler}>Cancel</button>
+        <AddMovie onAddMovie={addMovieHandler} />
+      </section>
+      <section>
+        <button onClick={FetchMoviesLists}>Fetch Movies</button>
       </section>
       <section>{content}</section>
     </React.Fragment>
