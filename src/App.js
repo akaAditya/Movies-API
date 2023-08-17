@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import MoviesList from "./components/MoviesList";
 import "./App.css";
+import MovieForm from "./components/MovieForm";
 
 function App() {
   const [movie, setMovie] = useState([]);
@@ -36,14 +37,13 @@ function App() {
     setIsLoader(false);
   }, []);
 
-  // Time Interval
   const setIntervalHandler = useCallback(async () => {
     intervalRef.current = setInterval(FetchMoviesLists, 5000);
   }, [FetchMoviesLists]);
 
   const removeIntervalHandler = useCallback(async () => {
     clearInterval(intervalRef.current);
-    setError(null)
+    setError(null);
   }, [intervalRef]);
 
   useEffect(() => {
@@ -52,10 +52,10 @@ function App() {
     };
   }, []);
 
-// Fetch movies on loading the page using useEffect
-  useEffect(()=>{
-    FetchMoviesLists()
-  },[FetchMoviesLists])
+  // Fetch movies on loading the page using useEffect
+  useEffect(() => {
+    FetchMoviesLists();
+  }, [FetchMoviesLists]);
 
   let content = <p>Found no Movies</p>;
 
@@ -71,6 +71,7 @@ function App() {
 
   return (
     <React.Fragment>
+      <MovieForm />
       <section>
         <button onClick={setIntervalHandler}>Fetch Movies</button>
         <button onClick={removeIntervalHandler}>Cancel</button>
